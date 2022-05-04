@@ -44,13 +44,16 @@ and
 
 `Password: ft_wandr...NDRel.L0L`
 
-We can see login and password prompts. So this vulnerability seems to be that the passwords are not encrypted on the network and therefor accessible to whomever would happen to capture the given packets.
+We can see login and password prompts.
+So this vulnerability seems to be that the passwords are not encrypted on the network and therefor accessible to whomever would happen to capture the given packets.
 
 There is still something odd though. If we try to log in the VM with that exact password, it does not work. There is surely more to the characters we see than meets the eye...
 
 ## What is the deal with that `.` character ?
 
-Just by reading the login prompt line we can easily deduce it to be that of a `backspace` input. This new piece of information can help us derive the password from the raw data available to us.
+Just by reading the login prompt line we can easily deduce it to be that of a `backspace` input.
+
+This new piece of information can help us derive the password from the raw data available to us.
 
 `Password: ft_wandr...NDRel.L0L`
 
