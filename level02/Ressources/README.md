@@ -15,7 +15,7 @@ Scp binary will allow us to extract from our remote environment the relevant fil
 
 `scp -P 4242 scp://level02@192.168.152.166/level02.pcap level02.pcap`
 
-So, since I have launched this command from my current level `Ressource` directory, the `level02.pcap` file is now available on my host machine.
+So, since I have launched this command from my current level `Ressources` directory, the `level02.pcap` file is now available on my host machine.
 
 ## wireshark
 
