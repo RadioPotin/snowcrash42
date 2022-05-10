@@ -64,5 +64,4 @@ flag08@192.168.152.166's password:
 Don't forget to launch getflag !
 flag08@SnowCrash:~$ getflag
 Check flag.Here is your token : 25749xKZ8L7DkSCwJkT9dyv6f
-flag08@SnowCrash:~$
 ```
