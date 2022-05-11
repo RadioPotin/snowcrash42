@@ -99,7 +99,7 @@ Dump of assembler code for function main:
 
 We reduced output for clarity's sake, but the main information here is:
 1. the `socket` system call is used to establish connection to host
-2. the `access` system call is used to check rights before openng file
+2. the `access` system call is used to check rights before opening file
 
 #### strace
 
@@ -192,9 +192,13 @@ yup
 
 ## Accessing the file
 
+So, as said previously, the `level10` binary uses `access` to check rights of effective user before opening file.
+
+Lets learn a bit more about this system call, and look for possible exploits.
+
 ### reading manuals II
 
-The man for [access](https://man7.org/linux/man-pages/man2/access.2.html) eventually tells us:
+Indeed, the man for [access](https://man7.org/linux/man-pages/man2/access.2.html) eventually tells us:
 
 >NOTES
 >      Warning: Using these calls to check if a user is authorized to,
@@ -210,6 +214,13 @@ The man for [access](https://man7.org/linux/man-pages/man2/access.2.html) eventu
 >      check the permissions on a symbolic link, use faccessat() with
 >      the flag AT_SYMLINK_NOFOLLOW.
 
-So there is a security hole to exploit in that binary in order to send it outward
+So there is a security hole to exploit in that binary in order to send out a file we do **not** own.
+
+To put it clearly, if we:
+- give to the binary a symlink to a file we own so that `access` checks our access rights and returns "OK"
+- then change the destination to that link to a file we **DO NOT** own **BEFORE** `open` is called
+
+### exploit
+
 
 ## getflag
