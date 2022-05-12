@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -eu
+
+while [ $? -ne 0 ]; do
+  ~/./level10 /tmp/outward $1
+done&
+echo "EXECUTION LOOP DONE."

