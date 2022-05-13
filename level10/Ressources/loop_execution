@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -eu
+set -xeu
 
-while [ $? -ne 0 ]; do
-  ~/./level10 /tmp/outward $1
-done&
-echo "EXECUTION LOOP DONE."
+for i in {1..100};
+do
+  ( ~/./level10 /tmp/outward $1 & )
+done

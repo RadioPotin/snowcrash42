@@ -1,12 +1,9 @@
 #!/bin/bash
 
-set -eu
+set -xeu
 
 while true
 do
-  echo "DUMMY"
-  ln -sf /tmp/dummy /tmp/outward
-  echo "TARGET"
-  ln -sf /home/user/level10/token /tmp/outward
+  ( ln -sf /tmp/dummy /tmp/outward & )
+  ( ln -sf /home/user/level10/token /tmp/outward & )
 done&
-echo "DONE."
