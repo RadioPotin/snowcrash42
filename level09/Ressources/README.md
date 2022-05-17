@@ -29,7 +29,7 @@ But that string does not allow us to log in as `flag09`.
 
 So this must be encrypted in some way.
 
-3. Feeding the `token` file to the executable: 
+3. Feeding the `token` file to the executable:
 
 ```shell-session
 level09@SnowCrash:~$ ./level09 token
@@ -62,7 +62,7 @@ puts("You should not reverse this"You should not reverse this
 
 Are we supposed to deduce what the binary does by experimenting ?
 
-## reverse engineering 
+## reverse engineering
 
 So lets proceed with feeding different files to the binary to try to understand what it does:
 
@@ -125,21 +125,22 @@ We can write a simple C program that does the exact reverse of what that binary 
 
 ```C
 #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
-  char c;
-
-  if (argc == 2) {
-    for (int i = 0; argv[1][i] != '\0'; i++) {
-      c = argv[1][i];
-      printf("%c", (c - i));
-    }
-    printf("\n");
-    return (0);
-  } else {
-    printf("USAGE:\n\t./a.out <string to decode>");
-    return (0);
+  if (argc == 2)
+  {
+    for (size_t i = 0; argv[1][i] != '\0'; i++)
+      dprintf(STDOUT_FILENO, "%c", (argv[1][i] - (char)i));
+    dprintf(STDOUT_FILENO, "\n");
+    return (EXIT_SUCCESS);
+  }
+  else
+  {
+    dprintf(STDERR_FILENO, "USAGE:\n\t./a.out <string to decode>\n");
+    return (EXIT_FAILURE);
   }
 }
 ```
@@ -147,8 +148,8 @@ int main(int argc, char **argv)
 Then feed the contents of the `token` file to that program:
 ```shell-session
 λ snowcrash42/level09/Ressources scp -P 4242 scp://level09@192.168.1.44/token encrypted_token
-β snowcrash42/level09/Ressources gcc main.c                                   
-λ snowcrash42/level09/Ressources ./a.out `cat encrypted_token`                
+β snowcrash42/level09/Ressources gcc main.c
+λ snowcrash42/level09/Ressources ./a.out `cat encrypted_token`
 f3iji1ju5yuevaus41q1afiuq
 ```
 
