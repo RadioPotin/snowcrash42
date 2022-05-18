@@ -52,7 +52,7 @@ Then we don't have one, but two subroutines. `t` and `n`. From the function call
 Let's continue ...
 
 ### subroutine `n`
-
+`
 This subroutine look's like it's printing two string.
 - Either `".."` or `"."`
 - It checks the first argument `$_[0]` and if it equal to `1` return `".."` or `"."` otherwise.
@@ -143,3 +143,5 @@ https://wiki.archlinux.org/title/Access_Control_Lists
 https://askubuntu.com/questions/257896/what-is-meant-by-mask-and-effective-in-the-output-from-getfacl
 
 Different permission that shown ?
+
+
