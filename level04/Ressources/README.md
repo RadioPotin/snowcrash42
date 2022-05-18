@@ -52,7 +52,7 @@ This is quite a troubling situation but a quick Google search `setuid on my perl
 
 > suid bit is disabled for scripts in most linux and unix distributions because it opens several security holes.
 
-## server 
+## server
 
 Since this script is ran on the server mentionned previously, it would only make sense to test if the output is the same there:
 
@@ -71,7 +71,7 @@ level04@SnowCrash:/etc/apache2/sites-enabled$ cat level05.conf
 	DocumentRoot	/var/www/level04/
 	SuexecUserGroup flag04 level04 # <---- important information
 	<Directory /var/www/level04>
-		Options +ExecCGI
+		Options +ExecCGI`
 		DirectoryIndex level04.pl
 		AllowOverride None
 		Order allow,deny
