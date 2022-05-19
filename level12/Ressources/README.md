@@ -95,7 +95,7 @@ The third variable that we can see in there is `@output`, which is an array assi
 egrep "^$xx" /tmp/xd 2>&1
 ```
 
-The `egrep` call will output the matching lines whoses begin with the transformed string `$xx` in a file located in `/tmp` named `xd`..
+The `egrep` call will output the matching lines that begin with the transformed string `$xx` in a file located in `/tmp` named `xd`..
 
 The main takeawat here is: **shell commands are unprotected and executed within a script with `suid` and `guid` bits set**
 
