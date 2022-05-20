@@ -7,7 +7,7 @@ The first thing we can see is ... nothing. No file, no directory corresponding t
 So after a bit of digging in the whole system, only one thing remained untouched.
 The binary getflag.
 
-The first thing we did after learning how to use gdb and how we can see syscalls used of a binary, was in deed, to dig into getflag.
+The first thing we did after learning how to use gdb and how we could see syscalls used in a binary, was indeed, to dig into getflag.
 
 What does `ltrace` tells us:
 
@@ -19,7 +19,7 @@ puts("You should not reverse this"You should not reverse this
 +++ exited (status 1) +++
 ```
 
-This is puzzling, bu since we have only been learning about how to do stuff we `should not` be doing, it doesn't seem like we should acknowledge this string "You should not reverse this", quite the contrary.
+This is puzzling, but since we have only been learning about how to do stuff we `should not` be doing, it doesn't seem like we should acknowledge this string "You should not reverse this", quite the contrary, this seems like the perfect place to search for vulnerabilities.
 
 
 ## First thoughts
@@ -74,7 +74,7 @@ So it's seems that `ptrace()` is triggering something in `getflag` when it is us
 
 We call that a *stripped binary*.
 
-We must find a way to go deeper in our debug to find a possible solution and optain our flag.
+We must find a way to go deeper in our debug to find a possible solution and obtain our flag.
 
 ## Attempt 1
 
