@@ -1,44 +1,36 @@
 # level12
 
-The last wall is here ...
-
 ## Hint
 
-The first thing we can see is ... nothing. No file, no directory corresponding to either flagXX or levelXX. The void.
+The first thing we can see is ... nothing. No file, no directory corresponding to either `flagXX` or `leveXX`.
 
 So after a bit of digging in the whole system, only one thing remained untouched.
 The binary getflag.
 
-Ok I'm not gonna lie the first thing we did after learning how to use gdb and how we can see syscalls used of a binary, was in deed, to dig into getflag.
+The first thing we did after learning how to use gdb and how we can see syscalls used of a binary, was in deed, to dig into getflag.
 
-What does ltrace tells us:
+What does `ltrace` tells us:
 
+```shell-session
 __libc_start_main(0x8048946, 1, 0xbffff7e4, 0x8048ed0, 0x8048f40 <unfinished ...>
 ptrace(0, 0, 1, 0, 0)                                                                                                                              = -1
 puts("You should not reverse this"You should not reverse this
 )                                                                                                                = 28
 +++ exited (status 1) +++
+```
 
-
-"You shall not pass"
-
-But, if we must ? We are in the bonus section, and what would be the last wall to climb if not this binary that gives us frustration and the solution at the same time ?
-
-
-Maybe.
-
-
-So yes, they tell us explicitly to not reverse this binary. But we see no other choice. This is the end getflag. Be prepared...
+This is puzzling, bu since we have only been learning about how to do stuff we `should not` be doing, it doesn't seem like we should acknowledge this string "You should not reverse this", quite the contrary.
 
 
 ## First thoughts
 
-What's ltrace tells us.
+What `ltrace` tells us.
 
-First we can see that ptrace is used at the top of everythings. Hmmm. But why the message that tells us to not reverse this binary is called explictly when we try to debug it ?
+First we can see that `ptrace` is used at the top of everything... But why is the message that tells us to `not reverse this binary` called explictly when we try to debug it ?
 
 Let's try one more thing, gdb.
 
+```shell-session
 level14@SnowCrash:~$ gdb getflag
 GNU gdb (Ubuntu/Linaro 7.4-2012.04-0ubuntu2.1) 7.4-2012.04
 Copyright (C) 2012 Free Software Foundation, Inc.
@@ -62,57 +54,75 @@ which has no line number information.
 You should not reverse this
 0xb7e454d3 in __libc_start_main () from /lib/i386-linux-gnu/libc.so.6
 (gdb)
+```
 
-Same thing ! Again we are warned to not execute a reverse program on this binary.
+Same thing ! Again, we are warned to not reverse program on this binary.
 
-But why ?
+### ptrace
 
-After some research we found that ltrace, gdb, strace and co are all using ptrace().
-ptrace() is a system call that monitor memory and register. It's in deed conveniant when you try to debug a program.
+After some research we found that `ltrace`, `gdb`, `strace` and cie are all using `ptrace()`, furthermore it cannot be called more than once in a given process...
 
-So it's seems that ptrace() is triggering something in getflag when it is used by the caller process. So we can't go further.
+And wrapping a binary with gdb produces a `single` process... So it is impossible to debug a program that calls `ptrace()` with `gdb` without having to deal with that issue.
 
-We call that a stripped binary.
+What's `ptrace` ?
 
-We must find a way to go deeper in our debug to find a possible solution to optain our flag.
+It is a system call that monitors memory and registers.
+
+It's indeed convenient when you try to debug a program.
+
+So it's seems that `ptrace()` is triggering something in `getflag` when it is used by the caller process. So we cannot go further.
+
+We call that a *stripped binary*.
+
+We must find a way to go deeper in our debug to find a possible solution and optain our flag.
 
 ## Attempt 1
 
-We know that ptrace() return -1 in case of failure. And exit getflag.
+We know that `ptrace()` returns `-1` when failing.
 
-So we thought that using a custom ptrace() to fake is return and pass throught it.
+So we thought about using a custom `ptrace()` to stub the one called in gdb and be able to pass through the call to it in `getflag`.
 
-LD_PRELOAD may be the answer.
+The env variable `LD_PRELOAD` may be the answer.
 
-We then created a custom ptrace() library as follow that always return 0.
+We then created a custom `ptrace` library as follow that always returns `0`.
 
+```C
 int ptrace(int *a, int*b, void *c)
 {
     write(2, "Hello from my custom ptrace()\n", 30);
     return (0);
 }
+```
 
-We compile it as a shared library so we can use this custom ptrace() at runtime.
+We compile it as a shared library so we can use this custom `ptrace` at runtime.
 
+```shell-session
 level14@SnowCrash:/tmp$ gcc -shared ptrace.c -o ptrace.so
-
+```
 And we start to use gdb. (In quiet mode)
 
+```shell-session
 level14@SnowCrash:/tmp$ gdb -q getflag
 Reading symbols from /bin/getflag...(no debugging symbols found)...done.
 (gdb)
+```
 
-We then set our custom LD_PRELOAD to the environment
+We then set our custom `LD_PRELOAD `to the environment
 
+```shell-session
 (gdb) set environment LD_PRELOAD=/tmp/ptrace.so
+```
 
-And we launch our getflag.
+And we launch our `getflag`.
 
+```shell-session
 (gdb) file getflag
 Reading symbols from /bin/getflag...(no debugging symbols found)...done.
+```
 
 After setting up our breakpoint on main and run the debugger. We got an output !
 
+```shell-session
 (gdb) b main
 Breakpoint 1 at 0x804894a
 (gdb) run
@@ -127,21 +137,24 @@ Injection Linked lib detected exit..
 (gdb)
 The program is not being run.
 (gdb)
+```
+
+Oups ! It seems like we cannot do that.
+
+The program checks for `LD_PRELOAD` and exits it immediately.
+
+That's was a nice try but it's not the way.
 
 
-Oups ! We can't do that. The program check for LD_PRELOAD and exit it immediatly.
+## Attempt 2 
 
-That's was a nice try but it's not enought.
+So our custom `ptrace` wasn't working. Let's try an other way.
 
+We must pass throught `ptrace` so let's see what's our disassembler in `gdb` shows us.
 
-## Attempt 2 and success
+*NB: We got rid of our custom library*
 
-So our custom ptrace() wasn't working. Let's try an other way.
-
-We must pass throught ptrace() so let's see what's our dissambler in gdb shows us.
-
-PS: We got rid of our custom library
-
+```shell-session
 (gdb) disas main
 Dump of assembler code for function main:
    0x08048946 <+0>:	push   %ebp
@@ -455,10 +468,14 @@ Dump of assembler code for function main:
    0x08048eca <+1412>:	leave
    0x08048ecb <+1413>:	ret
 End of assembler dump.
+```
 
 
-There is a lot going on. Let's find ptrace().
+There is a lot going on...
 
+First, let's find ptrace().
+
+```shell-session
 Dump of assembler code for function main:
    0x08048946 <+0>:	push   %ebp
    0x08048947 <+1>:	mov    %esp,%ebp
@@ -473,14 +490,16 @@ Dump of assembler code for function main:
    0x08048972 <+44>:	movl   $0x1,0x8(%esp)
    0x0804897a <+52>:	movl   $0x0,0x4(%esp)
    0x08048982 <+60>:	movl   $0x0,(%esp)
-   0x08048989 <+67>:	call   0x8048540 <ptrace@plt>
+   0x08048989 <+67>:	call   0x8048540 <ptrace@plt>     <----- Call to ptrace
    0x0804898e <+72>:	test   %eax,%eax
    0x08048990 <+74>:	jns    0x80489a8 <main+98>
+```
 
-He is there ! We can see that the function call of ptrace executes and there is a test after.
+It's here ! We can see that the function call of ptrace executes and there is a test after.
 
 Let's see what's there.
 
+```shell-session
 (gdb) b *0x0804898e
 Breakpoint 1 at 0x804898e
 (gdb) run
@@ -489,37 +508,40 @@ Starting program: /bin/getflag
 Breakpoint 1, 0x0804898e in main ()
 (gdb) print $eax
 $1 = -1
+```
 
+After printing the value we can conclude that we got kicked out right there, the return value is `-1`.
 
-After printing the value we can conclude that we got kicked out there. The value is -1.
+And if we can set it to `0` ?
 
-And if we can set it to 0 ?
-
+```shell-session
 (gdb) set $eax=0
 (gdb) print $eax
 $2 = 0
+```
 
-Let's continue now
+Let's continue.
 
+```shell-session
 (gdb) c
 Continuing.
 Check flag.Here is your token :
 Nope there is no token here for you sorry. Try again :)
 [Inferior 1 (process 32143) exited normally]
 (gdb)
+```
 
-We succesfully pass throught ptrace() and we have the correct output without the error message !
+We succesfully pass through `ptrace` and we have the correct output, i.e. without the error message !
 
-But we don't have the token yet !
+But we don't have the token yet...
 
-With disas main we can see that there is a call to getuid(). Isn't remembering you something ?
+With `disas main` we can see that there is a call to `getuid()`, as seen in previous exercises. 
 
-.... Exemple exo ....
+Let's see what's happening there:
 
+We start over with the same settings than before. And let's add an other breakpoint to the stackframe with cmp. It must be there. The check for the user uid.
 
-Let's see what's happening there. We start over with the same settings than before. And let's add an other breakpoint to the stackframe with cmp. It must be there. The check for the user uid.
-
-
+```shell-session
 level14@SnowCrash:/tmp$ gdb -q getflag
 Reading symbols from /bin/getflag...(no debugging symbols found)...done.
 (gdb) b *0x0804898e
@@ -538,18 +560,22 @@ which has no line number information.
 Breakpoint 2, 0x08048b0a in main ()
 (gdb) print $eax
 $1 = 2014
+```
 
+Yes ! We can see that we have our current user uid `2014` referring to `level14` !
 
-Yes ! We can see that we have our current user uid 2014 referring to level14 !
+We should be getting something different if we set an `UID` corresponding to another user.
 
-We must get something differents if we set a corresponding UID to the stackframe. Maybe the uid=3014 corresponding to the user flag14 from /etc/passwd ?
+For example, UID `3014`, that as we can see in the `/etc/passwd` file, corresponding to the user `flag14`.
 
-Is it that easy ?
+## getflag
 
+```shell-session
 (gdb) set $eax=3014
 (gdb) c
 Continuing.
 Check flag.Here is your token : 7QiHafiNa3HVozsaXkawuYrTstxbpABHD8CPnHJ
 [Inferior 1 (process 32189) exited normally]
+```
 
 Easy !
